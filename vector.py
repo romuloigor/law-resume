@@ -1,5 +1,8 @@
 import pinecone
 
+#Importing OpenAIEmbeddings from langchain.embeddings is deprecated.
+from langchain_community.embeddings import OpenAIEmbeddings
+
 def vector_exists(index, vector, namespace=''):
     query_response = index.query(
         vector=vector,
@@ -13,9 +16,6 @@ def vector_exists(index, vector, namespace=''):
             return True
     return False
 
-from langchain.embeddings import OpenAIEmbeddings
-
-def chunk_to_vector(chunk):
-    embeddings = OpenAIEmbeddings()
-    vector = embeddings.embed(chunk)
+def chunk_to_vector(chunk, embeddings):
+    vector = embeddings.embed_query(chunk.page_content)
     return vector

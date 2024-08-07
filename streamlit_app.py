@@ -5,7 +5,8 @@ from streamlit_cookies_controller import CookieController
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 
-from langchain.embeddings import OpenAIEmbeddings as langchain_embeddings_OpenAIEmbeddings
+#Importing OpenAIEmbeddings from langchain.embeddings is deprecated.
+from langchain_community.embeddings import OpenAIEmbeddings
 
 from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
 
@@ -16,7 +17,7 @@ from langchain.chains import RetrievalQA
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
 
 from pinecone import Pinecone, ServerlessSpec
-import funcs_pinecone
+import vector
 
 import yaml
 import os, time
@@ -112,7 +113,7 @@ with st.sidebar:
                     chunks = text_splitter.create_documents([doc.page_content for doc in documents])
                     st.write(chunks)
                     
-                    vector = funcs_pinecone.chunk_to_vector(chunk=chunks, embeddings=embeddings)
+                    vector = vector.chunk_to_vector(chunk=chunks, embeddings=embeddings)
                     st.write(vector)
 
                     #vectors = embeddings.embed_documents([doc.page_content for doc in documents])
@@ -122,7 +123,7 @@ with st.sidebar:
                     #if not funcs_pinecone.vector_exists(index=index, vector=chunks):
 
                     # Inserir o vetor no Pinecone se não existir
-                    vector_docs = vectorstore.from_documents(chunks, embeddings, index_name=index_name)
+                    #vector_docs = vectorstore.from_documents(chunks, embeddings, index_name=index_name)
 
                     #else:
                     #    print("Vetor já existe no Pinecone.")
