@@ -49,7 +49,7 @@ with st.sidebar:
         with st.spinner("Loading..."):
             os.environ['OPENAI_API_KEY']   = st.secrets.store_api_key.OPENAI_API_KEY
             os.environ['PINECONE_API_KEY'] = st.secrets.store_api_key.PINECONE_API_KEY
-            index_name                     = st.session_state["auth"].split('@')[0]
+            index_name                     = st.session_state["auth"].split('@')[0].replace('.','-')
 
             pinecone_client = Pinecone()
             index           = pinecone_client.Index(index_name)
