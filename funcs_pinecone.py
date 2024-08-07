@@ -12,3 +12,10 @@ def vector_exists(index, vector, namespace=''):
         if query_response['matches'][0]['score'] > similarity_threshold:
             return True
     return False
+
+from langchain.embeddings import OpenAIEmbeddings
+
+def chunk_to_vector(chunk):
+    embeddings = OpenAIEmbeddings()
+    vector = embeddings.embed(chunk)
+    return vector

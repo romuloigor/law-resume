@@ -5,6 +5,8 @@ from streamlit_cookies_controller import CookieController
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 
+from langchain.embeddings import OpenAIEmbeddings as langchain_embeddings_OpenAIEmbeddings
+
 from langchain_pinecone import PineconeVectorStore, PineconeEmbeddings
 
 from langchain_community.document_loaders import PyMuPDFLoader
@@ -108,24 +110,28 @@ with st.sidebar:
                     )
 
                     chunks = text_splitter.create_documents([doc.page_content for doc in documents])
-                    st.write(chunks[0].page_content)
-                    vectors = embeddings.embed_documents([doc.page_content for doc in documents])
-                    st.write(vectors)
+                    st.write(chunks)
+                    
+                    vector = funcs_pinecone.chunk_to_vector(chunk=chunks, embeddings=embeddings)
+                    st.write(vector)
+
+                    #vectors = embeddings.embed_documents([doc.page_content for doc in documents])
+                    #st.write(vectors)
 
                     # Verificar se o vetor já existe
-                    if not funcs_pinecone.vector_exists(index=index, vector=chunks):
-                        # Inserir o vetor no Pinecone se não existir
-                        vector_docs = vectorstore.from_documents(chunks, embeddings, index_name=index_name)    
-                    else:
-                        print("Vetor já existe no Pinecone.")
+                    #if not funcs_pinecone.vector_exists(index=index, vector=chunks):
 
-                    
-            
-            st.write(pinecone_client.describe_index(index_name))
+                    # Inserir o vetor no Pinecone se não existir
+                    vector_docs = vectorstore.from_documents(chunks, embeddings, index_name=index_name)
+
+                    #else:
+                    #    print("Vetor já existe no Pinecone.")
+
+            #st.write(pinecone_client.describe_index(index_name))
             st.write(pinecone_client.list_collections())
             st.write(index.describe_index_stats())
 
-            st.success('Done')
+            st.success('VectorDB Atualizado!')
 
 # Check if 'key' already exists in session_state
 # If not, then initialize it
@@ -141,7 +147,8 @@ if 'login' in st.session_state:
         
         question = st.text_area(
             "Faça uma pergunta pertinente aos documentos inseridos.",
-            placeholder="Crie uma tabela com o número do processos, nome do réu, data hora e local, julgamento simplificado em DEFERIDO ou INDEFERIDO.",
+            #placeholder="Crie uma tabela com o número do processos, nome do réu, data hora e local, julgamento simplificado em DEFERIDO ou INDEFERIDO.",
+            value="Crie uma tabela com o número do processos, nome do réu, data hora e local, julgamento simplificado em DEFERIDO ou INDEFERIDO.",
             disabled=not chain,
         )
 
@@ -155,7 +162,7 @@ if 'login' in st.session_state:
 
         answer_1 = chain.invoke(messages[3].content)
 
-        st.write(answer_1)
+        st.markdown(answer_1['result'])
 
         #with col2:
             #st.write("RESULT")
