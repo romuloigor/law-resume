@@ -40,7 +40,7 @@ def list_news(index, namespace):
 
         for vector_id, vector_data in fetch_response['vectors'].items():
             metadata = vector_data.get('metadata', {})
-            list_news.append(f"{metadata['text']}")
+            list_news.append(metadata)
     
     return list_news
 
@@ -75,15 +75,11 @@ if 'login' in st.session_state:
                     index_name = st.session_state["auth"].split('@')[0].replace('.','-')
 
                 namespace = 'default'
+                
+                pinecone_client = Pinecone()
+                index           = pinecone_client.Index(index_name)
 
-                data = [
-                    {"id": "1", "action":False, "text": "A maçã é uma fruta popular conhecida por sua doçura e textura crocante."},
-                    {"id": "2", "action":False, "text": "A empresa de tecnologia Apple é conhecida por seus produtos inovadores como o iPhone."},
-                    {"id": "3", "action":False, "text": "Muitas pessoas gostam de comer maçãs como um lanche saudável."},
-                    {"id": "4", "action":False, "text": "O website https://www.apple.com possue oferta de telefones celulares."},
-                    {"id": "5", "action":False, "text": "Uma maçã por dia mantém o médico longe, como diz o ditado."},
-                    {"id": "6", "action":False, "text": "A empresa da maça foi fundada em 1º de abril de 1976, por Steve Jobs, Steve Wozniak e Ronald Wayne como uma parceria."}
-                ]
+                data = list_news(index, namespace)
 
                 data_editor_options = {
                     "column_config": {
@@ -109,19 +105,6 @@ if 'login' in st.session_state:
                 df = pd.DataFrame(data)
                 edited_df = st.data_editor(df, **data_editor_options)
                 
-                data_editor_options_buttons = st.columns([1, 1])
-                
-                with data_editor_options_buttons[0]:
-                    if st.button("Update"):
-                        st.write("Update")
-
-                with data_editor_options_buttons[0]:
-                    if st.button("Delete"):
-                        st.write("Delete")
-
-                pinecone_client = Pinecone()
-                index           = pinecone_client.Index(index_name)
-
                 embeddings = pinecone_client.inference.embed(
                     model="multilingual-e5-large",
                     inputs=[d['text'] for d in data],
@@ -133,12 +116,14 @@ if 'login' in st.session_state:
                 data_hora = datetime.now().strftime('%Y%m%d_%H%M')
 
                 records = []
+                id = 1
                 for d, e in zip(data, embeddings):
                     records.append({
-                        "id": d['id'],
+                        "id": id,
                         "values": e['values'],
                         "metadata": {'text': d['text'], 'type': 'news', 'date_time': data_hora }
                     })
+                    id += 1
 
                 question = st.text_area(
                     "Faça uma pergunta pertinente as noticias.",
