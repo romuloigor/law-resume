@@ -1,7 +1,7 @@
 streamlit
 streamlit_oauth
 streamlit-cookies-controller
-streamlit-awesome-table
+streamlit-pandas
 
 openai
 

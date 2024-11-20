@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 st.write('Pesquisar em notícias')
 
-from awesome_table import AwesomeTable
+import streamlit_pandas as sp
 
 data = [
     {"id": "vec1", "text": "Apple is a popular fruit known for its sweetness and crisp texture."},
@@ -17,4 +17,6 @@ data = [
     {"id": "vec6", "text": "Apple Computer Company was founded on April 1, 1976, by Steve Jobs, Steve Wozniak, and Ronald Wayne as a partnership."}
 ]
 
-AwesomeTable(pd.json_normalize(data))
+df = pd.DataFrame(data)
+
+sp.create_widgets(df)
