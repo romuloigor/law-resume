@@ -6,8 +6,6 @@ logging.basicConfig(level=logging.INFO)
 
 st.write('Pesquisar em notícias')
 
-import streamlit_pandas as sp
-
 data = [
     {"id": "vec1", "text": "Apple is a popular fruit known for its sweetness and crisp texture."},
     {"id": "vec2", "text": "The tech company Apple is known for its innovative products like the iPhone."},
@@ -19,4 +17,4 @@ data = [
 
 df = pd.DataFrame(data)
 
-sp.create_widgets(df)
+st.dataframe(df)
