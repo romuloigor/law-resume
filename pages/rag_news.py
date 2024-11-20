@@ -6,15 +6,16 @@ logging.basicConfig(level=logging.INFO)
 
 st.write('Pesquisar em notícias')
 
-data = [
-    {"id": "vec1", "text": "Apple is a popular fruit known for its sweetness and crisp texture."},
-    {"id": "vec2", "text": "The tech company Apple is known for its innovative products like the iPhone."},
-    {"id": "vec3", "text": "Many people enjoy eating apples as a healthy snack."},
-    {"id": "vec4", "text": "Apple Inc. has revolutionized the tech industry with its sleek designs and user-friendly interfaces."},
-    {"id": "vec5", "text": "An apple a day keeps the doctor away, as the saying goes."},
-    {"id": "vec6", "text": "Apple Computer Company was founded on April 1, 1976, by Steve Jobs, Steve Wozniak, and Ronald Wayne as a partnership."}
+dados = [
+    {"id": "vec1", "texto": "A maçã é uma fruta popular conhecida por sua doçura e textura crocante."},
+    {"id": "vec2", "texto": "A empresa de tecnologia Apple é conhecida por seus produtos inovadores como o iPhone."},
+    {"id": "vec3", "texto": "Muitas pessoas gostam de comer maçãs como um lanche saudável."},
+    {"id": "vec4", "texto": "A maça lembra designs elegantes e interfaces amigáveis."},
+    {"id": "vec5", "texto": "Uma maçã por dia mantém o médico longe, como diz o ditado."},
+    {"id": "vec6", "texto": "A empresa da maça foi fundada em 1º de abril de 1976, por Steve Jobs, Steve Wozniak e Ronald Wayne como uma parceria."}
 ]
+
 
 df = pd.DataFrame(data)
 
-st.dataframe(df)
+edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
