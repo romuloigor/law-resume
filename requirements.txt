@@ -18,6 +18,7 @@ pinecone-plugin-assistant
 PyMuPDF
 PyYAML
 
+pandas
 pandas-datareader
 
 numpy
