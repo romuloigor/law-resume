@@ -1,35 +1,186 @@
 import streamlit as st
 import pandas as pd
 
+from datetime import datetime
+from io import BytesIO
+import fitz
+import tempfile
+import os, time
+import base64
+import json
+import yaml
+
+from openai import OpenAI
+
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
+
+from langchain_community.document_loaders import PyMuPDFLoader
+
+from langchain_pinecone import PineconeVectorStore
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from langchain.chains import RetrievalQA
+from langchain.schema import SystemMessage, HumanMessage, AIMessage
+
 from pinecone import Pinecone, ServerlessSpec
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-st.write('Pesquisar em notícias')
+def list_news(index, namespace):
+    id_generator = index.list(namespace=namespace)
+
+    vector_ids = list(id_generator)
+    
+    list_news=[]
+    
+    if len(vector_ids) > 0:
+        fetch_response = index.fetch(ids=vector_ids[0], namespace=namespace)
+
+        for vector_id, vector_data in fetch_response['vectors'].items():
+            metadata = vector_data.get('metadata', {})
+            list_news.append(f"{metadata['text']}")
+    
+    return list_news
+
+def delete_news(index, namespace):
+    id_generator = index.list(namespace=namespace)
+
+    vector_ids = list(id_generator)
+    
+    if len(vector_ids) > 0:
+        delete_response = index.delete(ids=vector_ids[0], namespace=namespace)
+    
+    return len(vector_ids)
 
 if 'login' in st.session_state:
     if ( st.session_state['login'] and ( "auth" in st.session_state ) ) or st.session_state.DISABLE_LOGIN:
+        
+        col1, col2 = st.columns([5, 1])
+        
+        col1.write('Chat')
+        col2.write('Envio das notícias!')
 
-        data = [
-            {"id": "vec1", "text": "A maçã é uma fruta popular conhecida por sua doçura e textura crocante."},
-            {"id": "vec2", "text": "A empresa de tecnologia Apple é conhecida por seus produtos inovadores como o iPhone."},
-            {"id": "vec3", "text": "Muitas pessoas gostam de comer maçãs como um lanche saudável."},
-            {"id": "vec4", "text": "A maça lembra designs elegantes e interfaces amigáveis."},
-            {"id": "vec5", "text": "Uma maçã por dia mantém o médico longe, como diz o ditado."},
-            {"id": "vec6", "text": "A empresa da maça foi fundada em 1º de abril de 1976, por Steve Jobs, Steve Wozniak e Ronald Wayne como uma parceria."}
-        ]
+        with col1:
+            with st.spinner("Loading..."):
+                os.environ['OPENAI_API_KEY']   = st.secrets.store_api_key.OPENAI_API_KEY
+                os.environ['PINECONE_API_KEY'] = st.secrets.store_api_key.PINECONE_API_KEY
+                
+                if st.session_state.DISABLE_LOGIN:
+                    st.write("Logged in DEV MODE")
+                    index_name = 'dev-1024'
+                else:
+                    st.write("Logged in")
+                    index_name = st.session_state["auth"].split('@')[0].replace('.','-')
 
-        df = pd.DataFrame(data)
+                namespace = 'default'
 
-        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+                data = [
+                    {"id": "1", "action":False, "text": "A maçã é uma fruta popular conhecida por sua doçura e textura crocante."},
+                    {"id": "2", "action":False, "text": "A empresa de tecnologia Apple é conhecida por seus produtos inovadores como o iPhone."},
+                    {"id": "3", "action":False, "text": "Muitas pessoas gostam de comer maçãs como um lanche saudável."},
+                    {"id": "4", "action":False, "text": "O website https://www.apple.com possue oferta de telefones celulares."},
+                    {"id": "5", "action":False, "text": "Uma maçã por dia mantém o médico longe, como diz o ditado."},
+                    {"id": "6", "action":False, "text": "A empresa da maça foi fundada em 1º de abril de 1976, por Steve Jobs, Steve Wozniak e Ronald Wayne como uma parceria."}
+                ]
 
-        pinecone_client = Pinecone()
-        index           = pinecone_client.Index(index_name)
+                data_editor_options = {
+                    "column_config": {
+                        "id": st.column_config.NumberColumn(
+                            "ID",
+                            help="ID",
+                            width=100,
+                        ),
+                        "text": st.column_config.TextColumn(
+                            "Text",
+                            help="Content",
+                            width=1000,
+                        ),
+                        "action": st.column_config.CheckboxColumn(
+                            "Update?",
+                            help="Update?"
+                        )
+                    },
+                    "use_container_width": False,
+                    "num_rows": "dynamic"
+                }
 
-        # Convert the text into numerical vectors that Pinecone can index
-        embeddings = pinecone_client.inference.embed(
-            model="multilingual-e5-large",
-            inputs=[d['text'] for d in data],
-            parameters={"input_type": "passage", "truncate": "END"}
-        )
+                df = pd.DataFrame(data)
+                edited_df = st.data_editor(df, **data_editor_options)
+                
+                data_editor_options_buttons = st.columns([1, 1])
+                
+                with data_editor_options_buttons[0]:
+                    if st.button("Update"):
+                        st.write("Update")
+
+                with data_editor_options_buttons[0]:
+                    if st.button("Delete"):
+                        st.write("Delete")
+
+                pinecone_client = Pinecone()
+                index           = pinecone_client.Index(index_name)
+
+                embeddings = pinecone_client.inference.embed(
+                    model="multilingual-e5-large",
+                    inputs=[d['text'] for d in data],
+                    parameters={"input_type": "passage", "truncate": "END"}
+                )
+
+                #st.write(embeddings)
+
+                data_hora = datetime.now().strftime('%Y%m%d_%H%M')
+
+                records = []
+                for d, e in zip(data, embeddings):
+                    records.append({
+                        "id": d['id'],
+                        "values": e['values'],
+                        "metadata": {'text': d['text'], 'type': 'news', 'date_time': data_hora }
+                    })
+
+                question = st.text_area(
+                    "Faça uma pergunta pertinente as noticias.",
+                    #placeholder="Ajuda!",
+                    value="Tell me about the tech company known as Apple.",
+                    disabled=False,
+                )
+
+                st.write(question)
+
+                query_embedding = pinecone_client.inference.embed(
+                    model="multilingual-e5-large",
+                    inputs=[question],
+                    parameters={
+                        "input_type": "query"
+                    }
+                )
+
+                results = index.query(
+                    namespace=namespace,
+                    vector=query_embedding[0].values,
+                    top_k=3,
+                    include_values=False,
+                    include_metadata=True
+                )
+
+                st.write(results)
+
+        with col2:
+            if st.button("Delete news"):
+                number_delete_news = delete_news(index, namespace)
+                st.write(f"news deleted: {number_delete_news}")
+
+            if st.button("Insert news"):
+                index.upsert(vectors=records,namespace=namespace)
+            
+            if st.button("List news"):
+                news = list_news(index, namespace)
+                st.write(f"list news: {news}")
+
+            if st.button('Ir para Noticias'):
+                st.switch_page('pages/rag_news.py')
+
+            if st.button('Ir para Documentos'):
+                st.switch_page('pages/rag_pdf.py')

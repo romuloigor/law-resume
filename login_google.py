@@ -29,9 +29,6 @@ def logout(controller):
         controller.remove('cookie_token')
 
 def login(controller):
-    #cookies = controller.getAll()
-    #st.write(cookies)
-
     cookie_auth = controller.get('cookie_auth')
     if cookie_auth:
         #st.write(cookie_auth)
@@ -83,5 +80,5 @@ def login(controller):
         if st.session_state['auth'] in PREAUTHORIZED_EMAILS:
             return True, st.session_state["auth"]
         
-    st.write("You are not allowed to access this page")
-    return False, 'Access denied'
+    st.write("Você não está logado com sua conta Google!")
+    return False, 'Acesso público!'

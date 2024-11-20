@@ -23,17 +23,16 @@ from langchain.chains import RetrievalQA
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
 
 from pinecone import Pinecone, ServerlessSpec
-import vector
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-def list_pdf(namespace):
+def list_pdf(index, namespace):
     id_generator = index.list(namespace=namespace)
 
     vector_ids = list(id_generator)
 
-    fetch_response = index.fetch(ids=vector_ids[0],namespace=namespace)
+    fetch_response = index.fetch(ids=vector_ids[0], namespace=namespace)
     
     list_file_name=[]
 
@@ -68,15 +67,14 @@ if 'login' in st.session_state:
             embeddings      = OpenAIEmbeddings(model='text-embedding-ada-002')
             llm             = ChatOpenAI(model='gpt-3.5-turbo-16k', temperature=0.2)
 
-            # Verificar se o índice existe, caso contrário, criar um novo índice
             if index_name not in pinecone_client.list_indexes().names():
                 pinecone_client.create_index(
                     name=index_name,
-                    dimension=1536,  # Substitua pela dimensão correta dos seus embeddings
+                    dimension=1536,
                     metric='cosine',
                     spec=ServerlessSpec(
-                        cloud='aws',  # Substitua pela nuvem correta, se necessário
-                        region='us-east-1'  # Substitua pela região correta, se necessário
+                        cloud='aws',
+                        region='us-east-1'
                     )
                 )
 
@@ -86,7 +84,7 @@ if 'login' in st.session_state:
         col2.write('Envio de PDF')
 
         with col2:
-            list_file_name_unique = list_pdf(namespace)
+            list_file_name_unique = list_pdf(index, namespace)
 
             st.write(f"Lista de arquivos já enviados {list_file_name_unique}!")
 
@@ -121,7 +119,6 @@ if 'login' in st.session_state:
                         data_hora = datetime.now().strftime('%Y%m%d_%H%M')
                         chunks = text_splitter.create_documents([doc.page_content for doc in documents], metadatas=[{'file_name': os.path.basename(uploaded_file.name), 'date_time': data_hora } for doc in documents])
                     
-                        # Inserir o vetor no Pinecone se não existir
                         vectorstore_doc = PineconeVectorStore.from_documents(
                             documents=chunks,
                             embedding=embeddings,
@@ -150,7 +147,6 @@ if 'login' in st.session_state:
                 disabled=not chain,
             )
 
-            # Mensagens para simular a conversa
             messages = [
                 SystemMessage(content="Você é um assistente, que responde as perguntas somente referentes ao documentos anexados."),
                 HumanMessage(content="Olá Assistente, como você está hoje?"),
