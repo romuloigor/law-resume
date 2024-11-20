@@ -28,6 +28,7 @@ st.session_state['DISABLE_LOGIN'] = DISABLE_LOGIN
 paginas = [
     st.Page("pages/rag_news.py", title="Noticias", icon="🗞️"),
     st.Page("pages/rag_pdf.py" , title="Documentos", icon="📄"),
+    st.Page("pages/rag_assistant.py" , title="Assistente", icon="📎"),
     st.Page("pages/settings.py", title="Configurações", icon="⚙️")
 ]
 
