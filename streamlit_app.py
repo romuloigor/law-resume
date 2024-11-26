@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 
 controller = CookieController()
 
-DISABLE_LOGIN = True
+DISABLE_LOGIN = False
 st.session_state['DISABLE_LOGIN'] = DISABLE_LOGIN
 
 paginas = [
